@@ -1,46 +1,208 @@
-<!doctype html>
-<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin · BD Follower Selling</title>
-<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BD Follower Selling - Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:#172033;font-family:"Hind Siliguri",sans-serif}.wrap{max-width:850px;margin:auto;padding:18px}
-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.brand{font-size:23px;font-weight:700}a{color:#087e55}
-.card{background:#fff;border:1px solid #e1e7ef;border-radius:14px;padding:16px;margin:12px 0}.hidden{display:none!important}
-input,select{width:100%;padding:10px;border:1px solid #ccd5e1;border-radius:8px;font:inherit;margin:5px 0 12px}
-button{border:0;border-radius:9px;padding:10px 15px;background:#087e55;color:white;font:600 15px inherit;cursor:pointer}
-button.secondary{background:#e8edf3;color:#263247}button.danger{background:#b42318}
-label{font-weight:600;font-size:14px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.muted{color:#667085;font-size:13px}
-.topline{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.service{display:grid;grid-template-columns:1.3fr .8fr .8fr auto;gap:8px;align-items:end}
-@media(max-width:620px){.service{grid-template-columns:1fr 1fr}.service .wide{grid-column:1/-1}.row{grid-template-columns:1fr}}
-</style></head><body><main class="wrap">
-<header><div class="brand">BD Follower Selling · Admin</div><a href="index.html">ওয়েবসাইট দেখুন</a></header>
-<section class="card" id="loginBox"><h2>Admin Login</h2><label>ইমেইল</label><input id="email" type="email" placeholder="Admin email"><label>পাসওয়ার্ড</label><input id="password" type="password" placeholder="Password"><button id="login">লগইন</button><p class="muted" id="loginMsg"></p></section>
-<section id="panel" class="hidden">
-<div class="topline"><h2>সার্ভিস ও দাম</h2><button class="secondary" id="logout">Logout</button></div>
-<div class="card"><h3>নতুন সার্ভিস যোগ করুন</h3><div class="row">
-<div><label>প্ল্যাটফর্ম</label><select id="newPlatform"><option value="facebook">Facebook</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option></select></div>
-<div><label>সার্ভিসের নাম</label><input id="newTitle" placeholder="যেমন: ফলোয়ার"></div>
-<div><label>প্রতি ১টির দাম (৳)</label><input id="newRate" type="number" step=".01" min=".01" placeholder="যেমন: 0.60"></div>
-<div><label>প্যাকেজ (কমা দিয়ে)</label><input id="newQty" value="100,500,1000,5000"></div>
-</div><button id="add">সার্ভিস যোগ করুন</button><p class="muted" id="addMsg"></p></div>
-<div class="card"><h3>বর্তমান সার্ভিস</h3><p class="muted">নাম, প্রতি ইউনিটের দাম ও প্যাকেজ বদলে সেভ করুন।</p><div id="list">লোড হচ্ছে...</div></div>
-<div class="card"><h3>WhatsApp নম্বর</h3><label>দেশের কোডসহ নম্বর</label><input id="wa" value="8801891827498"><button id="saveWa">নম্বর সেভ করুন</button><p class="muted" id="waMsg"></p></div>
-</section></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="config.js"></script>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:#f1f5f9;font-family:Arial}
+.container{max-width:600px;margin:auto}
+.card{background:white;padding:20px;border-radius:14px;margin:15px 0;box-shadow:0 3px 12px #ddd}
+h2{color:#1877f2;text-align:center}
+input,textarea{width:100%;padding:13px;margin:8px 0;border:1px solid #ccc;border-radius:8px}
+button{padding:12px 18px;border:0;border-radius:8px;background:#1877f2;color:white;margin:5px;cursor:pointer}
+.delete{background:#dc2626}
+.edit{background:#16a34a}
+.hidden{display:none}
+.item{border:1px solid #ddd;padding:12px;border-radius:9px;margin:10px 0}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h2>BD Follower Selling</h2>
+<p style="text-align:center">Admin Dashboard</p>
+
+<div class="card" id="loginBox">
+<h3>Admin Login</h3>
+<input id="email" type="email" placeholder="Admin Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="loginMsg"></p>
+</div>
+
+<div class="hidden" id="dashboard">
+<div class="card">
+<h3>নতুন সার্ভিস যোগ করুন</h3>
+<input id="title" placeholder="সার্ভিসের নাম">
+<textarea id="description" placeholder="সার্ভিসের বিবরণ"></textarea>
+<input id="price" type="number" placeholder="দাম">
+<button onclick="saveService()">সেভ করুন</button>
+<button onclick="logout()" style="background:#555">Logout</button>
+<p id="msg"></p>
+</div>
+
+<div class="card">
+<h3>সার্ভিস তালিকা</h3>
+<div id="serviceList">Loading...</div>
+</div>
+</div>
+
+</div>
+
 <script>
-const C=window.APP_CONFIG||{};const sb=C.supabaseUrl&&C.supabaseKey?supabase.createClient(C.supabaseUrl,C.supabaseKey):null;
-const $=id=>document.getElementById(id);const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-if(!sb){$("loginMsg").textContent="config.js-এ Supabase URL ও Publishable Key বসাতে হবে।"}
-else{sb.auth.getSession().then(({data})=>show(!!data.session));sb.auth.onAuthStateChange((_e,s)=>show(!!s))}
-function show(on){$("loginBox").classList.toggle("hidden",on);$("panel").classList.toggle("hidden",!on);if(on){load();loadWa()}}
-$("login").onclick=async()=>{const {error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});$("loginMsg").textContent=error?"লগইন হয়নি। ইমেইল ও পাসওয়ার্ড দেখুন।":""};
-$("logout").onclick=()=>sb.auth.signOut();
-async function load(){const {data,error}=await sb.from("services").select("*").order("platform").order("sort");if(error){$("list").textContent="লোড হয়নি। SQL সেটআপ ও Admin email পরীক্ষা করুন।";return}
-$("list").innerHTML=(data||[]).map(s=>`<div class="card service" data-id="${s.id}"><div class="wide"><label>${esc(s.platform)}</label><input class="title" value="${esc(s.title)}"></div><div><label>প্রতি ১টির দাম</label><input class="rate" type="number" min=".01" step=".01" value="${esc(s.rate)}"></div><div><label>প্যাকেজ</label><input class="qty" value="${esc((s.qty||[]).join(","))}"></div><div><button class="save">সেভ</button><button class="danger del">মুছুন</button></div></div>`).join("")||"কোনো সার্ভিস নেই"}
-$("list").onclick=async e=>{const box=e.target.closest("[data-id]");if(!box)return;const id=Number(box.dataset.id);
-if(e.target.classList.contains("save")){const title=box.querySelector(".title").value.trim(),rate=Number(box.querySelector(".rate").value),qty=box.querySelector(".qty").value.split(",").map(x=>parseInt(x.trim(),10)).filter(x=>x>0);if(!title||!(rate>0)||!qty.length){alert("নাম, দাম ও প্যাকেজ ঠিকভাবে দিন।");return}const {error}=await sb.from("services").update({title,rate,qty}).eq("id",id);alert(error?"সেভ হয়নি":"সেভ হয়েছে");if(!error)load()}
-if(e.target.classList.contains("del")){if(!confirm("এই সার্ভিসটি মুছবেন?"))return;const {error}=await sb.from("services").delete().eq("id",id);alert(error?"মুছতে পারেনি":"মুছে ফেলা হয়েছে");if(!error)load()}};
-$("add").onclick=async()=>{const platform=$("newPlatform").value,title=$("newTitle").value.trim(),rate=Number($("newRate").value),qty=$("newQty").value.split(",").map(x=>parseInt(x.trim(),10)).filter(x=>x>0);if(!title||!(rate>0)||!qty.length){$("addMsg").textContent="সব তথ্য ঠিকভাবে পূরণ করুন।";return}const {error}=await sb.from("services").insert({platform,title,hint:platform,rate,qty,sort:99,active:true});$("addMsg").textContent=error?"যোগ হয়নি।":"সার্ভিস যোগ হয়েছে।";if(!error){$("newTitle").value="";load()}};
-async function loadWa(){const {data}=await sb.from("settings").select("*").eq("key","whatsapp").maybeSingle();if(data?.value)$("wa").value=data.value}
-$("saveWa").onclick=async()=>{const {error}=await sb.from("settings").upsert({key:"whatsapp",value:$("wa").value.replace(/\D/g,"")});$("waMsg").textContent=error?"সেভ হয়নি":"নম্বর সেভ হয়েছে।";};
-</script></body></html>
+const ADMIN_EMAIL = "ariyanhossenrakib86@gmail.com";
+
+const db = window.supabase.createClient(
+  window.APP_CONFIG.supabaseUrl,
+  window.APP_CONFIG.supabaseKey
+);
+
+let editingId = null;
+
+async function login(){
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  const {data,error} = await db.auth.signInWithPassword({
+    email,password
+  });
+
+  if(error){
+    document.getElementById("loginMsg").innerText = error.message;
+    return;
+  }
+
+  if(data.user.email !== ADMIN_EMAIL){
+    await db.auth.signOut();
+    document.getElementById("loginMsg").innerText = "আপনি Admin নন!";
+    return;
+  }
+
+  showDashboard();
+}
+
+function showDashboard(){
+  document.getElementById("loginBox").classList.add("hidden");
+  document.getElementById("dashboard").classList.remove("hidden");
+  loadServices();
+}
+
+async function logout(){
+  await db.auth.signOut();
+  location.reload();
+}
+
+async function saveService(){
+  const title = document.getElementById("title").value.trim();
+  const description = document.getElementById("description").value.trim();
+  const price = document.getElementById("price").value;
+
+  if(!title || price === ""){
+    alert("নাম এবং দাম লিখুন");
+    return;
+  }
+
+  const service = {
+    title,
+    description,
+    price:Number(price),
+    active:true
+  };
+
+  let result;
+
+  if(editingId){
+    result = await db.from("services")
+      .update(service).eq("id",editingId);
+  }else{
+    result = await db.from("services").insert(service);
+  }
+
+  if(result.error){
+    alert(result.error.message);
+    return;
+  }
+
+  editingId = null;
+  document.getElementById("title").value = "";
+  document.getElementById("description").value = "";
+  document.getElementById("price").value = "";
+  document.getElementById("msg").innerText = "সেভ হয়েছে!";
+  loadServices();
+}
+
+async function loadServices(){
+  const {data,error} = await db.from("services")
+    .select("*").order("id",{ascending:false});
+
+  const list = document.getElementById("serviceList");
+
+  if(error){
+    list.innerText = error.message;
+    return;
+  }
+
+  list.innerHTML = "";
+
+  data.forEach(item=>{
+    const div = document.createElement("div");
+    div.className = "item";
+
+    const name = document.createElement("b");
+    name.textContent = item.title;
+
+    const details = document.createElement("p");
+    details.textContent = item.description + " | দাম: ৳" + item.price;
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit";
+    editBtn.textContent = "Edit";
+    editBtn.onclick = ()=>editService(item);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.onclick = ()=>deleteService(item.id);
+
+    div.append(name,details,editBtn,deleteBtn);
+    list.appendChild(div);
+  });
+}
+
+function editService(item){
+  editingId = item.id;
+  document.getElementById("title").value = item.title;
+  document.getElementById("description").value = item.description;
+  document.getElementById("price").value = item.price;
+  window.scrollTo(0,0);
+}
+
+async function deleteService(id){
+  if(!confirm("এই সার্ভিসটি মুছে ফেলবেন?")) return;
+
+  const {error} = await db.from("services").delete().eq("id",id);
+
+  if(error){
+    alert(error.message);
+    return;
+  }
+
+  loadServices();
+}
+
+async function checkLogin(){
+  const {data} = await db.auth.getSession();
+
+  if(data.session && data.session.user.email === ADMIN_EMAIL){
+    showDashboard();
+  }
+}
+
+checkLogin();
+</script>
+</body>
+</html>
