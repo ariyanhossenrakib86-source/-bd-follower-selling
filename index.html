@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BD Follower Selling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--ink:#172033;--muted:#697386;--line:#e3e8f0;--green:#087e55;--soft:#e6f6ef}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hind Siliguri",sans-serif}
+.wrap{max-width:920px;margin:auto;padding:18px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 22px}
+.brand{font-size:25px;font-weight:700}.brand span{color:var(--green)}
+.admin{font-size:14px;color:var(--muted);text-decoration:none}
+.hero{background:linear-gradient(120deg,#0b684b,#11966a);color:#fff;border-radius:20px;padding:24px;margin-bottom:22px}
+.hero h1{margin:0 0 5px;font-size:28px}.hero p{margin:0;opacity:.9}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.tab{border:1px solid var(--line);background:#fff;padding:10px 18px;border-radius:30px;font:600 15px inherit;cursor:pointer}
+.tab.active{background:var(--green);border-color:var(--green);color:white}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h3{margin:0 0 5px;font-size:19px}.muted{color:var(--muted);font-size:14px}
+.packages{display:flex;flex-wrap:wrap;gap:8px;margin:13px 0}
+.package{background:var(--soft);border-radius:10px;padding:7px 10px;font-size:14px;font-weight:600}
+.price{color:var(--green);font-size:18px;font-weight:700}
+.order{display:block;text-align:center;background:var(--green);color:#fff;text-decoration:none;padding:11px;border-radius:10px;font-weight:700}
+.empty{padding:25px;text-align:center;color:var(--muted);background:white;border-radius:14px}
+footer{text-align:center;color:var(--muted);font-size:13px;padding:28px 0}
+@media(max-width:520px){.wrap{padding:13px}.hero h1{font-size:24px}.brand{font-size:21px}}
+</style></head>
+<body><main class="wrap">
+<header><div class="brand">BD <span>Follower Selling</span></div><a class="admin" href="admin.html">Admin Login</a></header>
+<section class="hero"><h1>BD Follower Selling</h1><p>আপনার পছন্দের সার্ভিস বেছে নিন এবং WhatsApp-এ অর্ডার করুন।</p></section>
+<nav class="tabs" id="tabs">
+<button class="tab active" data-platform="facebook">Facebook</button>
+<button class="tab" data-platform="youtube">YouTube</button>
+<button class="tab" data-platform="instagram">Instagram</button>
+</nav>
+<section class="grid" id="services"><div class="empty">সার্ভিস লোড হচ্ছে...</div></section>
+<footer>© BD Follower Selling · যোগাযোগ: 01891827498</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+const cfg=window.APP_CONFIG||{};
+const wa=(cfg.whatsapp||"8801891827498").replace(/\D/g,"");
+const client=cfg.supabaseUrl&&cfg.supabaseKey?supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey):null;
+let current="facebook", services=[];
+const bn=n=>Number(n).toLocaleString("bn-BD");
+const fallback=[
+{platform:"facebook",title:"ফলোয়ার",hint:"Facebook",rate:.6,qty:[100,500,1000,5000]},
+{platform:"facebook",title:"লাইক",hint:"Facebook",rate:.35,qty:[100,500,1000,5000]},
+{platform:"facebook",title:"কমেন্ট",hint:"Facebook",rate:3,qty:[10,25,50,100]},
+{platform:"facebook",title:"ভিউ",hint:"Facebook",rate:.05,qty:[1000,5000,10000,50000]},
+{platform:"youtube",title:"সাবস্ক্রাইবার",hint:"YouTube",rate:2.5,qty:[50,100,500,1000]},
+{platform:"youtube",title:"লাইক",hint:"YouTube",rate:.5,qty:[100,500,1000,5000]},
+{platform:"youtube",title:"কমেন্ট",hint:"YouTube",rate:4,qty:[10,25,50,100]},
+{platform:"youtube",title:"ভিউ",hint:"YouTube",rate:.12,qty:[1000,5000,10000,50000]},
+{platform:"instagram",title:"ফলোয়ার",hint:"Instagram",rate:.7,qty:[100,500,1000,5000]},
+{platform:"instagram",title:"লাইক",hint:"Instagram",rate:.3,qty:[100,500,1000,5000]},
+{platform:"instagram",title:"কমেন্ট",hint:"Instagram",rate:3,qty:[10,25,50,100]},
+{platform:"instagram",title:"ভিউ",hint:"Instagram",rate:.04,qty:[1000,5000,10000,50000]}
+];
+function render(){
+ document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.platform===current));
+ const list=services.filter(s=>s.platform===current&&s.active!==false);
+ const root=document.getElementById("services");
+ if(!list.length){root.innerHTML='<div class="empty">এই প্ল্যাটফর্মে এখন কোনো সার্ভিস নেই।</div>';return}
+ root.innerHTML=list.map(s=>`<article class="card"><h3>${esc(s.title)}</h3><div class="muted">${esc(s.hint||"")}</div><div class="packages">${(s.qty||[]).map(q=>`<a class="package" style="text-decoration:none;color:inherit" target="_blank" rel="noopener" href="${waLink(s,q)}">${bn(q)} · ৳${bn(Math.max(1,Math.round(q*Number(s.rate))))} · অর্ডার</a>`).join("")}</div></article>`).join("");
+}
+function qDefault(s){return (s.qty||[])[0]||1000}
+function waLink(s,q){const msg=`আসসালামু আলাইকুম, আমি অর্ডার করতে চাই।\nপ্ল্যাটফর্ম: ${s.platform}\nসার্ভিস: ${s.title}\nপরিমাণ: ${q}\nদাম: ৳${Math.max(1,Math.round(q*Number(s.rate)))}\nআমার লিংক: `;return `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+document.getElementById("tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-platform]");if(!b)return;current=b.dataset.platform;render()});
+async function init(){
+ if(client){
+  const [{data,error},{data:settings}]=await Promise.all([
+   client.from("services").select("*").eq("active",true).order("platform").order("sort"),
+   client.from("settings").select("*").eq("key","whatsapp").maybeSingle()
+  ]);
+  if(settings?.value){const foot=document.querySelector("footer");foot.textContent="© BD Follower Selling · যোগাযোগ: "+settings.value;}
+  if(!error&&data?.length){services=data;render();return}
+ }
+ services=fallback;render();
+}
+init();
+</script></body></html>
