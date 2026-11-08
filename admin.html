@@ -2,207 +2,211 @@
 <html lang="bn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BD Follower Selling - Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <style>
 *{box-sizing:border-box}
-body{margin:0;padding:20px;background:#f1f5f9;font-family:Arial}
-.container{max-width:600px;margin:auto}
-.card{background:white;padding:20px;border-radius:14px;margin:15px 0;box-shadow:0 3px 12px #ddd}
-h2{color:#1877f2;text-align:center}
-input,textarea{width:100%;padding:13px;margin:8px 0;border:1px solid #ccc;border-radius:8px}
-button{padding:12px 18px;border:0;border-radius:8px;background:#1877f2;color:white;margin:5px;cursor:pointer}
-.delete{background:#dc2626}
-.edit{background:#16a34a}
+body{margin:0;background:#07111f;color:#fff;font-family:Arial,sans-serif;padding:18px}
+.wrap{max-width:700px;margin:auto}
+h2{color:#39a9ff}
+.card{background:#111f33;border:1px solid #203957;border-radius:15px;padding:18px;margin:15px 0}
+input,select,button{width:100%;padding:13px;margin:7px 0;border-radius:9px;border:1px solid #34506e;font-size:15px}
+input,select{background:#091629;color:white}
+button{background:#087ee5;color:white;border:0;font-weight:bold}
+button.danger{background:#c0394b}
+button.gray{background:#34465c}
+.small{color:#a9bed5;font-size:13px}
+.item{background:#0a192c;padding:13px;border-radius:10px;margin:10px 0}
+.row{display:flex;gap:8px}
+.row button{flex:1}
 .hidden{display:none}
-.item{border:1px solid #ddd;padding:12px;border-radius:9px;margin:10px 0}
 </style>
 </head>
 <body>
-<div class="container">
-
-<h2>BD Follower Selling</h2>
-<p style="text-align:center">Admin Dashboard</p>
+<div class="wrap">
+<h2>BD FOLLOWER SELLING</h2>
+<p class="small">ADMIN DASHBOARD</p>
 
 <div class="card" id="loginBox">
 <h3>Admin Login</h3>
 <input id="email" type="email" placeholder="Admin Email">
 <input id="password" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-<p id="loginMsg"></p>
+<button onclick="login()">LOGIN</button>
+<p id="loginMsg" class="small"></p>
 </div>
 
-<div class="hidden" id="dashboard">
+<div id="dashboard" class="hidden">
 <div class="card">
-<h3>নতুন সার্ভিস যোগ করুন</h3>
+<h3>নতুন বৈধ সার্ভিস যোগ করুন</h3>
 <input id="title" placeholder="সার্ভিসের নাম">
-<textarea id="description" placeholder="সার্ভিসের বিবরণ"></textarea>
-<input id="price" type="number" placeholder="দাম">
-<button onclick="saveService()">সেভ করুন</button>
-<button onclick="logout()" style="background:#555">Logout</button>
-<p id="msg"></p>
+<input id="hint" placeholder="সার্ভিসের বিবরণ">
+<input id="linkLabel" placeholder="লিংকের নাম (যেমন: পেজ লিংক)">
+<input id="placeholder" placeholder="ইনপুটের নির্দেশনা">
+<input id="rate" type="number" step="0.01" placeholder="দাম">
+<input id="qty" placeholder="প্যাকেজ সংখ্যা (কমা দিয়ে)">
+<input id="sort" type="number" value="1" placeholder="ক্রম">
+<select id="platform">
+<option value="facebook">Facebook</option>
+<option value="instagram">Instagram</option>
+<option value="youtube">YouTube</option>
+<option value="tiktok">TikTok</option>
+</select>
+<button onclick="saveService()">সার্ভিস যোগ করুন</button>
+<p id="saveMsg" class="small"></p>
 </div>
 
 <div class="card">
 <h3>সার্ভিস তালিকা</h3>
-<div id="serviceList">Loading...</div>
-</div>
+<div id="services">লোড হচ্ছে...</div>
 </div>
 
+<button class="gray" onclick="logout()">LOGOUT</button>
+</div>
 </div>
 
 <script>
-const ADMIN_EMAIL = "ariyanhossenrakib86@gmail.com";
-
-const db = window.supabase.createClient(
-  window.APP_CONFIG.supabaseUrl,
-  window.APP_CONFIG.supabaseKey
+const sb = window.supabase.createClient(
+window.SUPABASE_URL,
+window.SUPABASE_ANON_KEY
 );
 
 let editingId = null;
 
 async function login(){
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
+ const email=document.getElementById('email').value.trim();
+ const password=document.getElementById('password').value;
+ const msg=document.getElementById('loginMsg');
+ msg.textContent='লগইন হচ্ছে...';
 
-  const {data,error} = await db.auth.signInWithPassword({
-    email,password
-  });
+ const {error}=await sb.auth.signInWithPassword({email,password});
+ if(error){msg.textContent=error.message;return;}
 
-  if(error){
-    document.getElementById("loginMsg").innerText = error.message;
-    return;
-  }
-
-  if(data.user.email !== ADMIN_EMAIL){
-    await db.auth.signOut();
-    document.getElementById("loginMsg").innerText = "আপনি Admin নন!";
-    return;
-  }
-
-  showDashboard();
-}
-
-function showDashboard(){
-  document.getElementById("loginBox").classList.add("hidden");
-  document.getElementById("dashboard").classList.remove("hidden");
-  loadServices();
+ document.getElementById('loginBox').classList.add('hidden');
+ document.getElementById('dashboard').classList.remove('hidden');
+ loadServices();
 }
 
 async function logout(){
-  await db.auth.signOut();
-  location.reload();
-}
-
-async function saveService(){
-  const title = document.getElementById("title").value.trim();
-  const description = document.getElementById("description").value.trim();
-  const price = document.getElementById("price").value;
-
-  if(!title || price === ""){
-    alert("নাম এবং দাম লিখুন");
-    return;
-  }
-
-  const service = {
-    title,
-    description,
-    price:Number(price),
-    active:true
-  };
-
-  let result;
-
-  if(editingId){
-    result = await db.from("services")
-      .update(service).eq("id",editingId);
-  }else{
-    result = await db.from("services").insert(service);
-  }
-
-  if(result.error){
-    alert(result.error.message);
-    return;
-  }
-
-  editingId = null;
-  document.getElementById("title").value = "";
-  document.getElementById("description").value = "";
-  document.getElementById("price").value = "";
-  document.getElementById("msg").innerText = "সেভ হয়েছে!";
-  loadServices();
+ await sb.auth.signOut();
+ location.reload();
 }
 
 async function loadServices(){
-  const {data,error} = await db.from("services")
-    .select("*").order("id",{ascending:false});
+ const box=document.getElementById('services');
+ box.textContent='লোড হচ্ছে...';
 
-  const list = document.getElementById("serviceList");
+ const {data,error}=await sb.from('services')
+ .select('*').order('sort',{ascending:true});
 
-  if(error){
-    list.innerText = error.message;
-    return;
-  }
+ if(error){box.textContent=error.message;return;}
+ box.innerHTML='';
 
-  list.innerHTML = "";
+ data.forEach(s=>{
+ const div=document.createElement('div');
+ div.className='item';
 
-  data.forEach(item=>{
-    const div = document.createElement("div");
-    div.className = "item";
+ const heading=document.createElement('h3');
+ heading.textContent=s.title;
 
-    const name = document.createElement("b");
-    name.textContent = item.title;
+ const info=document.createElement('p');
+ info.textContent=(s.platform||'')+' | '+(s.hint||'')+' | দাম: '+s.rate;
 
-    const details = document.createElement("p");
-    details.textContent = item.description + " | দাম: ৳" + item.price;
+ const status=document.createElement('p');
+ status.textContent=s.active?'চালু':'বন্ধ';
 
-    const editBtn = document.createElement("button");
-    editBtn.className = "edit";
-    editBtn.textContent = "Edit";
-    editBtn.onclick = ()=>editService(item);
+ const edit=document.createElement('button');
+ edit.textContent='EDIT';
+ edit.onclick=()=>editService(s);
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "delete";
-    deleteBtn.textContent = "Delete";
-    deleteBtn.onclick = ()=>deleteService(item.id);
+ const toggle=document.createElement('button');
+ toggle.className='gray';
+ toggle.textContent=s.active?'বন্ধ করুন':'চালু করুন';
+ toggle.onclick=()=>toggleService(s);
 
-    div.append(name,details,editBtn,deleteBtn);
-    list.appendChild(div);
-  });
+ const del=document.createElement('button');
+ del.className='danger';
+ del.textContent='DELETE';
+ del.onclick=()=>deleteService(s.id);
+
+ div.append(heading,info,status,edit,toggle,del);
+ box.appendChild(div);
+ });
 }
 
-function editService(item){
-  editingId = item.id;
-  document.getElementById("title").value = item.title;
-  document.getElementById("description").value = item.description;
-  document.getElementById("price").value = item.price;
-  window.scrollTo(0,0);
+async function saveService(){
+ const msg=document.getElementById('saveMsg');
+ const packages=document.getElementById('qty').value
+ .split(',').map(x=>Number(x.trim()))
+ .filter(x=>Number.isInteger(x)&&x>0);
+
+ const record={
+ platform:document.getElementById('platform').value,
+ title:document.getElementById('title').value.trim(),
+ hint:document.getElementById('hint').value.trim(),
+ link_label:document.getElementById('linkLabel').value.trim()||'লিংক',
+ placeholder:document.getElementById('placeholder').value.trim(),
+ rate:Number(document.getElementById('rate').value),
+ qty:packages,
+ sort:Number(document.getElementById('sort').value)||1,
+ active:true
+ };
+
+ if(!record.title||!Number.isFinite(record.rate)||record.rate<=0||packages.length===0){
+ msg.textContent='নাম, সঠিক দাম ও প্যাকেজ লিখুন।';
+ return;
+ }
+
+ let result;
+ if(editingId){
+ result=await sb.from('services').update(record).eq('id',editingId);
+ }else{
+ result=await sb.from('services').insert(record);
+ }
+
+ if(result.error){msg.textContent=result.error.message;return;}
+
+ msg.textContent='সফল হয়েছে!';
+ editingId=null;
+ clearForm();
+ loadServices();
+}
+
+function editService(s){
+ editingId=s.id;
+ document.getElementById('title').value=s.title||'';
+ document.getElementById('hint').value=s.hint||'';
+ document.getElementById('linkLabel').value=s.link_label||'';
+ document.getElementById('placeholder').value=s.placeholder||'';
+ document.getElementById('rate').value=s.rate||'';
+ document.getElementById('qty').value=(s.qty||[]).join(',');
+ document.getElementById('sort').value=s.sort||1;
+ document.getElementById('platform').value=s.platform;
+ document.getElementById('saveMsg').textContent='এখন পরিবর্তন করে Save করুন।';
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function toggleService(s){
+ const {error}=await sb.from('services')
+ .update({active:!s.active}).eq('id',s.id);
+ if(error){alert(error.message);return;}
+ loadServices();
 }
 
 async function deleteService(id){
-  if(!confirm("এই সার্ভিসটি মুছে ফেলবেন?")) return;
-
-  const {error} = await db.from("services").delete().eq("id",id);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  loadServices();
+ if(!confirm('এই সার্ভিসটি ডিলিট করবেন?'))return;
+ const {error}=await sb.from('services').delete().eq('id',id);
+ if(error){alert(error.message);return;}
+ loadServices();
 }
 
-async function checkLogin(){
-  const {data} = await db.auth.getSession();
-
-  if(data.session && data.session.user.email === ADMIN_EMAIL){
-    showDashboard();
-  }
+function clearForm(){
+ ['title','hint','linkLabel','placeholder','rate','qty'].forEach(id=>{
+ document.getElementById(id).value='';
+ });
 }
-
-checkLogin();
 </script>
 </body>
 </html>
+
